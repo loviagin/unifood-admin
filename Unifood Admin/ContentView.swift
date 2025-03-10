@@ -8,14 +8,20 @@
 import SwiftUI
 
 struct ContentView: View {
+    @StateObject private var order = Order()
+    
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        TabView {
+            OrderView(order: order)
+                .tabItem {
+                    Label("Заказ", systemImage: "cart")
+                }
+            
+            AccountView()
+                .tabItem {
+                    Label("Аккаунт", systemImage: "person")
+                }
         }
-        .padding()
     }
 }
 
