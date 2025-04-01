@@ -3,27 +3,66 @@ import CodeScanner
 
 struct OrderView: View {
     @ObservedObject var order: Order
+    @StateObject private var menuViewModel = MenuViewModel()
     @State private var isShowingScanner = false
     @State private var isShowingOrderSheet = false
     
     var body: some View {
         NavigationView {
-            List {
-                ForEach(MenuItem.sampleItems) { item in
-                    HStack(spacing: 12) {
-                        MenuItemImage(url: item.imageUrl)
+            Group {
+                if menuViewModel.isLoading {
+                    ProgressView()
+                } else if let error = menuViewModel.error {
+                    VStack {
+                        Text("Ошибка загрузки меню")
+                            .font(.headline)
                         
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(item.name)
-                                .font(.headline)
-                            Text(item.description)
+                        if let urlError = error as? URLError {
+                            Text(urlError.localizedDescription)
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
-                            Text("\(Int(item.price)) ₽")
-                                .fontWeight(.medium)
+                                .multilineTextAlignment(.center)
+                        } else if let decodingError = error as? DecodingError {
+                            Text(getDecodingErrorDescription(decodingError))
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                        } else {
+                            Text(error.localizedDescription)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        
+                        Button {
+                            Task {
+                                await menuViewModel.fetchMenu()
+                            }
+                        } label: {
+                            Label("Повторить", systemImage: "arrow.clockwise")
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                    .padding()
+                } else {
+                    List {
+                        ForEach(menuViewModel.menuItems) { item in
+                            HStack(spacing: 12) {
+                                MenuItemImage()
+                                
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(item.name)
+                                        .font(.headline)
+                                    Text(item.description)
+                                        .font(.subheadline)
+                                        .foregroundColor(.secondary)
+                                    Text("\(Int(item.price)) ₽")
+                                        .fontWeight(.medium)
+                                }
+                            }
+                            .padding(.vertical, 8)
                         }
                     }
-                    .padding(.vertical, 8)
                 }
             }
             .navigationTitle("Меню")
@@ -51,9 +90,27 @@ struct OrderView: View {
             }
             .sheet(isPresented: $isShowingOrderSheet) {
                 if let customer = order.customer {
-                    OrderSheet(order: order, customer: customer, isPresented: $isShowingOrderSheet)
+                    OrderSheet(order: order, customer: customer, menuItems: menuViewModel.menuItems, isPresented: $isShowingOrderSheet)
                 }
             }
+            .task {
+                await menuViewModel.fetchMenu()
+            }
+        }
+    }
+    
+    private func getDecodingErrorDescription(_ error: DecodingError) -> String {
+        switch error {
+        case .keyNotFound(let key, _):
+            return "Отсутствует поле: \(key.stringValue)"
+        case .typeMismatch(let type, _):
+            return "Неверный тип данных: ожидался \(type)"
+        case .valueNotFound(let type, _):
+            return "Отсутствует значение: ожидался \(type)"
+        case .dataCorrupted(let context):
+            return "Данные повреждены: \(context.debugDescription)"
+        @unknown default:
+            return "Неизвестная ошибка декодирования"
         }
     }
     

@@ -3,6 +3,7 @@ import SwiftUI
 struct OrderSheet: View {
     @ObservedObject var order: Order
     let customer: Customer
+    let menuItems: [MenuItem]
     @Binding var isPresented: Bool
     @State private var isSubmitting = false
     @State private var showError = false
@@ -31,7 +32,7 @@ struct OrderSheet: View {
                 }
                 
                 Section("Меню") {
-                    ForEach(MenuItem.sampleItems) { item in
+                    ForEach(menuItems) { item in
                         MenuItemOrderRow(item: item, order: order)
                     }
                 }
@@ -217,7 +218,7 @@ struct MenuItemOrderRow: View {
     
     var body: some View {
         HStack(spacing: 12) {
-            MenuItemImage(url: item.imageUrl)
+            MenuItemImage()
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.name)

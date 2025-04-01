@@ -4,8 +4,8 @@ struct OrderRequest: Codable {
     let userId: String
     let title: String
     let details: String
-    let amount: Double
-    let bonuses: Double
+    let amount: Int
+    let bonuses: Int
     let type: String
     let date: Date
     
@@ -23,8 +23,8 @@ struct OrderRequest: Codable {
             userId: customer.id,
             title: "Заказ",
             details: details,
-            amount: Double(order.total),
-            bonuses: Double(order.useBonuses ? -order.bonusesToUse : earnedBonuses),
+            amount: order.total,
+            bonuses: order.useBonuses ? -order.bonusesToUse : earnedBonuses,
             type: order.useBonuses ? "spend" : "earn",
             date: Date()
         )
